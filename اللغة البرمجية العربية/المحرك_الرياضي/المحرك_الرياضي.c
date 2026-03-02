@@ -2,8 +2,10 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
-#include "محرك_المتغيرات.h"
 #include "المحرك_الرياضي.h"
+#include "محرك_المتغيرات.h"
+#include "محرك_الاعداد_الضخمة.h"
+
 
 /* =========================
    مؤشر داخلي
@@ -423,12 +425,114 @@ static int parse_function(double *v)
     return -1;
 }
 
+
+
+//==========================دالة محرك الاعداد الضخمة الاولية التعبيرية -+*..)
+{
+static int is_bigint_expression(const char *exp)
+{
+    int has_digit = 0;
+
+    while (*exp)
+    {
+        if (isspace(*exp)) {
+            exp++;
+            continue;
+        }
+
+        if (isdigit(*exp)) {
+            has_digit = 1;
+            exp++;
+            continue;
+        }
+
+        if (*exp == '+' || *exp == '*') {
+            exp++;
+            continue;
+        }
+
+        // تجاهل نهاية السطر
+        if (*exp == '\n' || *exp == '\r') {
+            exp++;
+            continue;
+        }
+
+        return 0;
+    }
+
+    return has_digit;
+}
+
+static void bigint_eval_simple(const char *exp)     // دالة
+{
+    BigInt result;
+    BigInt current;
+    BigInt temp;
+
+    char number[1024];
+    int ni = 0;
+
+    char op = 0;
+    int first = 1;
+
+    for (int i = 0; ; i++) {
+
+        if (isdigit(exp[i])) {
+            number[ni++] = exp[i];
+        }
+        else {
+
+            if (ni > 0) {
+                number[ni] = '\0';
+                bigint_from_string(&current, number);
+
+                if (first) {
+                    result = current;
+                    first = 0;
+                }
+                else {
+                    if (op == '+')
+                        bigint_add(&temp, &result, &current);
+                    else if (op == '*')
+                        bigint_mul(&temp, &result, &current);
+
+                    result = temp;
+                }
+
+                ni = 0;
+            }
+
+            if (exp[i] == '+' || exp[i] == '*')
+                op = exp[i];
+
+            if (exp[i] == '\0')
+                break;
+        }
+    }
+
+    printf("الناتج = ");
+    bigint_print(&result);
+}
+
+
+
 /* =========================================================
    الواجهة العامة
 ========================================================= */
-int math_eval(const char *expression_text,
-              double *result)
+int math_eval(const char *expression_text, double *result)
 {
+    // تخطّي المسافات في البداية
+    while (isspace(*expression_text))
+        expression_text++;
+
+    // إذا التعبير مناسب لـ BigInt
+    if (is_bigint_expression(expression_text))
+    {
+        bigint_eval_simple(expression_text);
+        return 2;
+    }
+
+    // غير ذلك → استخدم double
     p = expression_text;
 
     if (expression(result) != 0)
@@ -438,4 +542,3 @@ int math_eval(const char *expression_text,
 
     return (*p == '\0') ? 0 : -1;
 }
-

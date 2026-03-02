@@ -232,6 +232,7 @@ Command parse_line(const char *line) {
                  "%s",
                  eq + 1);
 
+        trim(cmd.argument);
         return cmd;
     }
 

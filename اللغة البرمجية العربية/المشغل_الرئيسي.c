@@ -5,6 +5,7 @@
 #include "مفسر_العمليات.h"
 #include "المنفذ.h"
 #include "محرك_الدالة.h"
+#include "محرك_الشرط.h"
 
 int main(int argc, char *argv[]) {
 
@@ -27,37 +28,66 @@ int main(int argc, char *argv[]) {
 
             Command cmd = parse_line(line);
 
-            // تجاهل السطور الفارغة
             if (cmd.type == CMD_UNKNOWN)
                 continue;
 
             // ===============================
-            // تعريف دالة داخل ملف
+            // تعريف دالة
             // ===============================
             if (cmd.type == CMD_FUNCTION_DEF) {
 
                 char body[2048] = "";
                 char inner[512];
+                int brace_level = 1;
 
                 while (fgets(inner, sizeof(inner), file)) {
 
                     inner[strcspn(inner, "\n")] = '\0';
 
-                    if (strchr(inner, '}')) {
-                        inner[strcspn(inner, "}")] = '\0';
+                    if (strchr(inner, '{'))
+                        brace_level++;
 
-                        if (strlen(inner) > 0) {
-                            strcat(body, inner);
-                            strcat(body, "\n");
-                        }
+                    if (strchr(inner, '}'))
+                        brace_level--;
+
+                    if (brace_level == 0)
                         break;
-                    }
 
                     strcat(body, inner);
                     strcat(body, "\n");
                 }
 
                 function_store(cmd.name, body);
+                continue;
+            }
+
+            // ===============================
+            // تعريف شرط
+            // ===============================
+            if (cmd.type == CMD_IF_DEF) {
+
+                char body[2048] = "";
+                char inner[512];
+                int brace_level = 1;
+
+                while (fgets(inner, sizeof(inner), file)) {
+
+                    inner[strcspn(inner, "\n")] = '\0';
+
+                    if (strchr(inner, '{'))
+                        brace_level++;
+
+                    if (strchr(inner, '}'))
+                        brace_level--;
+
+                    if (brace_level == 0)
+                        break;
+
+                    strcat(body, inner);
+                    strcat(body, "\n");
+                }
+
+                if_store(cmd.name, cmd.argument, body);
                 continue;
             }
 
@@ -84,7 +114,6 @@ int main(int argc, char *argv[]) {
 
         Command cmd = parse_line(line);
 
-        // تجاهل الأسطر الفارغة
         if (cmd.type == CMD_UNKNOWN)
             continue;
 
@@ -95,6 +124,7 @@ int main(int argc, char *argv[]) {
 
             char body[2048] = "";
             char inner[512];
+            int brace_level = 1;
 
             while (1) {
 
@@ -103,15 +133,14 @@ int main(int argc, char *argv[]) {
 
                 inner[strcspn(inner, "\n")] = '\0';
 
-                if (strchr(inner, '}')) {
-                    inner[strcspn(inner, "}")] = '\0';
+                if (strchr(inner, '{'))
+                    brace_level++;
 
-                    if (strlen(inner) > 0) {
-                        strcat(body, inner);
-                        strcat(body, "\n");
-                    }
+                if (strchr(inner, '}'))
+                    brace_level--;
+
+                if (brace_level == 0)
                     break;
-                }
 
                 strcat(body, inner);
                 strcat(body, "\n");
@@ -121,10 +150,42 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
+        // ===============================
+        // تعريف شرط
+        // ===============================
+        if (cmd.type == CMD_IF_DEF) {
+
+            char body[2048] = "";
+            char inner[512];
+            int brace_level = 1;
+
+            while (1) {
+
+                if (!fgets(inner, sizeof(inner), stdin))
+                    break;
+
+                inner[strcspn(inner, "\n")] = '\0';
+
+                if (strchr(inner, '{'))
+                    brace_level++;
+
+                if (strchr(inner, '}'))
+                    brace_level--;
+
+                if (brace_level == 0)
+                    break;
+
+                strcat(body, inner);
+                strcat(body, "\n");
+            }
+
+            if_store(cmd.name, cmd.argument, body);
+            continue;
+        }
+
         if (execute_command(cmd))
             break;
     }
 
     return 0;
 }
-

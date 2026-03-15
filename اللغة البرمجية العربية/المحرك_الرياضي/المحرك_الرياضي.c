@@ -2,8 +2,10 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
-#include "محرك_المتغيرات.h"
 #include "المحرك_الرياضي.h"
+#include "محرك_المتغيرات.h"
+#include "محرك_الدوال_المثلثية.h"
+
 
 /* =========================
    مؤشر داخلي
@@ -90,8 +92,7 @@ int solve_equation(const char *expression_text,
             *result = mid;
             var_set(unknown, mid);
 
-            strncpy(solved_var, unknown, 31);
-            solved_var[31] = '\0';
+            snprintf(solved_var, 32, "%s", unknown);
 
             return 0;
         }
@@ -133,20 +134,18 @@ static int find_unknown(const char *exp, char *unknown_out)
             if (!var_get(name, &tmp)) {
 
                 if (!found_once) {
-                    strncpy(found, name, 31);
-                    found[31] = '\0';
+                    snprintf(found, sizeof(found), "%s", name);
                     found_once = 1;
                 }
                 else if (strcmp(found, name) != 0) {
-                    return 0; // أكثر من مجهول مختلف
+                    return 0;   /* أكثر من مجهول */
                 }
             }
         }
     }
 
     if (found_once) {
-        strncpy(unknown_out, found, 31);
-        unknown_out[31] = '\0';
+        snprintf(unknown_out, 32, "%s", found);
         return 1;
     }
 
@@ -394,34 +393,48 @@ static int expression(double *v)
 /* =========================================================
    الدوال الرياضية
 ========================================================= */
-static int parse_function(double *v)
-{
+static int parse_function(double *v) {
     skip_spaces();
 
+    /* ===== جذر(x) أو جذر(x,n) ===== */
     if (strncmp(p, "جذر", 6) == 0) {
-
         p += 6;
-
-        if (*p++ != '(')
-            return -1;
+        if (*p++ != '(') return -1;
 
         double x;
+        if (expression(&x) != 0) return -1;
 
-        if (expression(&x) != 0)
-            return -1;
+        skip_spaces();
 
-        if (*p++ != ')')
-            return -1;
+        /* جذر نوني */
+        if (*p == ',') {
+            p++;
+            double n;
+            if (expression(&n) != 0 || n == 0) return -1;
+            if (*p++ != ')') return -1;
 
-        if (x < 0)
-            return -1;
+            *v = pow(x, 1.0 / n);
+            return 0;
+        }
+
+        /* جذر تربيعي */
+        if (*p++ != ')') return -1;
+        if (x < 0) return -1;
 
         *v = sqrt(x);
         return 0;
     }
+    /* ===== دوال مثلثية ===== */
+
+    if (trig_parse(&p, v) == 0)
+        return 0;
 
     return -1;
 }
+
+
+
+
 
 /* =========================================================
    الواجهة العامة
@@ -431,11 +444,47 @@ int math_eval(const char *expression_text,
 {
     p = expression_text;
 
-    if (expression(result) != 0)
+    double left;
+
+    if (expression(&left) != 0)
         return -1;
+
+    skip_spaces();
+
+    /* دعم المقارنات */
+
+    if (*p == '<' || *p == '>' || *p == '=')
+    {
+        char op1 = *p++;
+        char op2 = 0;
+
+        if (*p == '=')
+            op2 = *p++;
+
+        double right;
+
+        if (expression(&right) != 0)
+            return -1;
+
+        if (op1 == '<' && op2 == '=')
+            *result = (left <= right);
+        else if (op1 == '>' && op2 == '=')
+            *result = (left >= right);
+        else if (op1 == '<')
+            *result = (left < right);
+        else if (op1 == '>')
+            *result = (left > right);
+        else if (op1 == '=' && op2 == '=')
+            *result = (left == right);
+        else
+            return -1;
+
+        return 0;
+    }
+
+    *result = left;
 
     skip_spaces();
 
     return (*p == '\0') ? 0 : -1;
 }
-

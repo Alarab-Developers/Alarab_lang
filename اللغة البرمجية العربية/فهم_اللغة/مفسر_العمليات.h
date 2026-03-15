@@ -14,6 +14,9 @@ typedef enum {
     CMD_ASSIGN,
     CMD_FUNCTION_DEF,
     CMD_FUNCTION_CALL,
+    CMD_IF_DEF,
+    CMD_IF_CALL,
+    CMD_ELSE,
     CMD_SOLVE,
 } CommandType;
 

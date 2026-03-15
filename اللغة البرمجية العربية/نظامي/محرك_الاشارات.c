@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -9,7 +10,7 @@
 #include "المحرك_الرياضي.h"
 
 // =====================================
-// دالة لطباعة النصوص (نظيفة وبسيطة)
+// دالة لطباعة النصوص
 // =====================================
 void rt_print(const char *text)
 {
@@ -57,11 +58,24 @@ int runtime_execute(Command cmd)
         case CMD_EXEC:
         {
             double value;
+            int ret = math_eval(cmd.argument, &value);
 
-            if (math_eval(cmd.argument, &value) == 0)
-                printf("الناتج = %g\n", value);
+            if (ret == 0)   // حساب double
+            {
+                if (fabs(value - (long long)value) < 1e-9)
+                    printf("الناتج = %lld\n", (long long)value);
+                else
+                    printf("الناتج = %.10f\n", value);
+            }
+            else if (ret == 2)
+            {
+                // BigInt تم طباعته داخل المحرك
+                // لا نفعل شيء هنا
+            }
             else
+            {
                 printf("❌ خطأ في التعبير الرياضي\n");
+            }
 
             break;
         }
@@ -85,7 +99,11 @@ int runtime_execute(Command cmd)
                 if (math_eval(eq + 1, &val) == 0)
                 {
                     var_set(name, val);
-                    printf("تم حفظ %s = %g\n", name, val);
+
+                    if (fabs(val - (long long)val) < 1e-9)
+                        printf("تم حفظ %s = %lld\n", name, (long long)val);
+                    else
+                        printf("تم حفظ %s = %.10f\n", name, val);
                 }
                 else
                 {
@@ -108,7 +126,11 @@ int runtime_execute(Command cmd)
 
             if (r == 0)
             {
-                printf("✅ النتيجة المكتشفة: %s = %g\n", solved_var, value);
+                if (fabs(value - (long long)value) < 1e-9)
+                    printf("✅ النتيجة المكتشفة: %s = %lld\n", solved_var, (long long)value);
+                else
+                    printf("✅ النتيجة المكتشفة: %s = %.10f\n", solved_var, value);
+
                 var_set(solved_var, value);
             }
             else if (r == -3)
@@ -151,4 +173,3 @@ int runtime_execute(Command cmd)
 
     return 0;
 }
-

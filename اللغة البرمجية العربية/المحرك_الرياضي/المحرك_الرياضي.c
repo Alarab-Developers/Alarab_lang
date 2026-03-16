@@ -2,22 +2,25 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
+#include "محرك_الجذور.h"
+#include "محرك_الثوابت.h"
+#include "محرك_الاسس.h"
 #include "المحرك_الرياضي.h"
 #include "محرك_المتغيرات.h"
+#include "محرك_المقارنات.h"
 #include "محرك_الدوال_المثلثية.h"
+#include "محرك_العمليات_الحسابية_الاساسية.h"
 
 
 /* =========================
    مؤشر داخلي
 ========================= */
-static const char *p;
+const char *p;
 
 /* تصريحات داخلية */
-static int expression(double *v);
-static int term(double *v);
-static int factor(double *v);
+int factor(double *v);
 static int parse_function(double *v);
-static int power(double *v);
+int starts_factor(char c);
 static int find_unknown(const char *exp, char *unknown_out);
 
 /* =========================================================
@@ -157,12 +160,12 @@ static int find_unknown(const char *exp, char *unknown_out)
    أدوات مساعدة
 ========================================================= */
 
-static void skip_spaces() {
+void skip_spaces() {
     while (*p == ' ')
         p++;
 }
 
-static int starts_factor(char c) {
+int starts_factor(char c) {
     return isdigit(c) || c == '(' || c == '.' ||
            isalpha(c) || (unsigned char)c >= 0x80;
 }
@@ -206,30 +209,18 @@ static int read_number(double *v)
 }
 
 /* =========================================================
-   عامل
+   factor
 ========================================================= */
-static int factor(double *v)
+int factor(double *v)
 {
     skip_spaces();
 
-    /* ثوابت */
-    if (strncmp(p, "pi", 2) == 0) {
-        p += 2;
-        *v = M_PI;
-        return 0;
-    }
+    /* الثوابت */
 
-    if (strncmp(p, "π", strlen("π")) == 0) {
-        p += strlen("π");
-        *v = M_PI;
+    if (parse_constant(v) == 0)
         return 0;
-    }
 
-    if (strncmp(p, "فاي", strlen("فاي")) == 0) {
-        p += strlen("فاي");
-        *v = M_PI;
-        return 0;
-    }
+    /* السالب */
 
     if (*p == '-') {
         p++;
@@ -239,9 +230,12 @@ static int factor(double *v)
         return 0;
     }
 
+    /* الأقواس */
+
     if (*p == '(') {
         p++;
-        if (expression(v) != 0)
+
+        if (basic_expression(v) != 0)
             return -1;
 
         skip_spaces();
@@ -253,16 +247,15 @@ static int factor(double *v)
         return 0;
     }
 
+    /* المتغيرات */
+
     if ((unsigned char)*p >= 0x80 || isalpha(*p)) {
 
         char var_name[32];
         int i = 0;
 
-        while (((unsigned char)*p >= 0x80 || isalnum(*p))
-               && i < 31)
-        {
+        while (((unsigned char)*p >= 0x80 || isalnum(*p)) && i < 31)
             var_name[i++] = *p++;
-        }
 
         var_name[i] = '\0';
 
@@ -272,123 +265,19 @@ static int factor(double *v)
         p -= i;
     }
 
+    /* الدوال */
+
     if (parse_function(v) == 0)
         return 0;
+
+    /* الأرقام */
 
     return read_number(v);
 }
 
-/* =========================================================
-   الأس ^
-========================================================= */
-static int power(double *v)
-{
-    if (factor(v) != 0)
-        return -1;
-
-    skip_spaces();
-
-    /* دعم الأس المتسلسل Right Associative */
-    while (*p == '^') {
-
-        p++;
-
-        double exponent;
-
-        /* دعم الأس السالب أو المركب */
-        if (factor(&exponent) != 0)
-            return -1;
-
-        /* منع 0^سالب */
-        if (*v == 0 && exponent < 0)
-            return -2;
-
-        *v = pow(*v, exponent);
-
-        skip_spaces();
-    }
-
-    return 0;
-}
 
 
-/* =========================================================
-   الضرب والقسمة
-========================================================= */
-static int term(double *v)
-{
-    if (power(v) != 0)
-        return -1;
 
-    while (1) {
-
-        skip_spaces();
-
-        if (*p == '*' || *p == '/') {
-
-            char op = *p++;
-            double right;
-
-            if (power(&right) != 0)
-                return -1;
-
-            if (op == '*')
-                *v *= right;
-            else {
-                if (right == 0)
-                    return -2;
-                *v /= right;
-            }
-
-            continue;
-        }
-
-        if (starts_factor(*p)) {
-
-            double right;
-
-            if (power(&right) != 0)
-                return -1;
-
-            *v *= right;
-            continue;
-        }
-
-        break;
-    }
-
-    return 0;
-}
-
-/* =========================================================
-   الجمع والطرح
-========================================================= */
-static int expression(double *v)
-{
-    if (term(v) != 0)
-        return -1;
-
-    while (1) {
-
-        skip_spaces();
-
-        if (*p != '+' && *p != '-')
-            break;
-
-        char op = *p++;
-        double right;
-
-        if (term(&right) != 0)
-            return -1;
-
-        if (op == '+')
-            *v += right;
-        else
-            *v -= right;
-    }
-
-    return 0;
-}
 
 /* =========================================================
    الدوال الرياضية
@@ -396,34 +285,10 @@ static int expression(double *v)
 static int parse_function(double *v) {
     skip_spaces();
 
-    /* ===== جذر(x) أو جذر(x,n) ===== */
-    if (strncmp(p, "جذر", 6) == 0) {
-        p += 6;
-        if (*p++ != '(') return -1;
-
-        double x;
-        if (expression(&x) != 0) return -1;
-
-        skip_spaces();
-
-        /* جذر نوني */
-        if (*p == ',') {
-            p++;
-            double n;
-            if (expression(&n) != 0 || n == 0) return -1;
-            if (*p++ != ')') return -1;
-
-            *v = pow(x, 1.0 / n);
-            return 0;
-        }
-
-        /* جذر تربيعي */
-        if (*p++ != ')') return -1;
-        if (x < 0) return -1;
-
-        *v = sqrt(x);
+    if (parse_root(v) == 0)
         return 0;
-    }
+
+
     /* ===== دوال مثلثية ===== */
 
     if (trig_parse(&p, v) == 0)
@@ -431,7 +296,6 @@ static int parse_function(double *v) {
 
     return -1;
 }
-
 
 
 
@@ -446,40 +310,24 @@ int math_eval(const char *expression_text,
 
     double left;
 
-    if (expression(&left) != 0)
+    if (basic_expression(&left) != 0)
         return -1;
 
     skip_spaces();
 
     /* دعم المقارنات */
 
-    if (*p == '<' || *p == '>' || *p == '=')
+    double cmp;
+    int r = parse_comparison(left, &cmp);
+
+    if (r == 0)
     {
-        char op1 = *p++;
-        char op2 = 0;
-
-        if (*p == '=')
-            op2 = *p++;
-
-        double right;
-
-        if (expression(&right) != 0)
-            return -1;
-
-        if (op1 == '<' && op2 == '=')
-            *result = (left <= right);
-        else if (op1 == '>' && op2 == '=')
-            *result = (left >= right);
-        else if (op1 == '<')
-            *result = (left < right);
-        else if (op1 == '>')
-            *result = (left > right);
-        else if (op1 == '=' && op2 == '=')
-            *result = (left == right);
-        else
-            return -1;
-
+        *result = cmp;
         return 0;
+    }
+    else if (r < 0)
+    {
+        return -1;
     }
 
     *result = left;

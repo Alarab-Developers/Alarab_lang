@@ -1,30 +1,40 @@
-رخصة جنو العمومية (GNU General Public License)
-الإصدار 2، يونيو 1991
+MIT License
 
-حقوق الطبع والنشر (C) لعام 2024-2026 محفوظة لـ: سيف مطور (العرب)
+Copyright (c) 2024-2026 Saif Dev Al-Arab (سيف مطور العرب)
 
-يُسمح للجميع بنسخ وتوزيع نسخ حرفية من مستند الرخصة هذا، ولكن لا يُسمح بتغييره.
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to do so, subject to the following conditions:
 
-تمهيد:
- صممت رخص البرمجيات الحرة لضمان حريتك في مشاركة وتغيير البرمجيات الحرة. تضمن رخصة جنو العمومية (GPL) أن يظل الكود المصدري لمشروع "اللغة البرمجية العربية" متاحاً للجميع.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-شروط وأحكام النسخ والتوزيع والتعديل:
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
-1. يمكنك نسخ وتوزيع نسخ حرفية من الكود المصدري للبرنامج فور استلامك له، بشرط أن تنشر بشكل بارز ومناسب على كل نسخة إشعاراً بحقوق الطبع والنشر وإخلاء المسؤولية عن الضمان.
-
-2. يمكنك تعديل نسختك أو نسخك من البرنامج أو أي جزء منه، وبناء أعمال مستمدة منه، وتوزيع هذه التعديلات بشرط أن تظل خاضعة لنفس هذه الرخصة (GPL v2)، مما يعني أن أي كود مشتق يجب أن يكون مفتوح المصدر أيضاً.
-
-3. لا توجد ضمانات على هذا البرنامج؛ فهو يُقدم "كما هو" (AS IS) دون أي ضمان من أي نوع، سواء كان صريحاً أو ضمنياً.
-
-[ملاحظة: النص الكامل والرسمي باللغة الإنجليزية هو الملزم قانونياً، ويُفضل إرفاقه دائماً لضمان التوافق العالمي].
 ---------------------------------------------------------
-English Version (Official):
 
-GNU GENERAL PUBLIC LICENSE
-Version 2, June 1991
+# الترجمة العربية (للتوضيح فقط - غير ملزمة قانونيًا)
 
-Copyright (C) 2026 سيف مطور (العرب) 
-Everyone is permitted to copy and distribute verbatim copies
-of this license document, but changing it is not allowed.
+رخصة MIT
 
-[Insert Full GPL v2 English Text Here]
+حقوق الطبع والنشر (c) 2024-2026 محفوظة لـ: Saif Dev Al-Arab (سيف مطور العرب)
+
+يُمنح الإذن مجانًا لأي شخص يحصل على نسخة من هذا البرنامج والملفات المرتبطة به
+(ويُشار إليها بـ "البرنامج") للتعامل مع البرنامج دون قيود، بما في ذلك على سبيل المثال لا الحصر
+حقوق الاستخدام، النسخ، التعديل، الدمج، النشر، التوزيع، الترخيص الفرعي، و/أو بيع نسخ من البرنامج،
+والسماح للأشخاص الذين يتم تزويدهم بالبرنامج بالقيام بذلك، وفقًا للشروط التالية:
+
+يجب تضمين إشعار حقوق الطبع والنشر هذا وإشعار الإذن في جميع النسخ أو الأجزاء الجوهرية من البرنامج.
+
+يتم توفير البرنامج "كما هو" دون أي ضمان من أي نوع، صريح أو ضمني، بما في ذلك على سبيل المثال لا الحصر
+ضمانات القابلية للتسويق، أو الملاءمة لغرض معين، أو عدم التعدي على الحقوق.
+ولا يتحمل المؤلفون أو أصحاب حقوق الطبع والنشر أي مسؤولية عن أي مطالبة أو أضرار أو التزامات أخرى،
+سواء في دعوى عقدية أو تقصيرية أو غير ذلك، ناشئة عن أو مرتبطة بالبرنامج أو استخدامه أو التعامل معه.

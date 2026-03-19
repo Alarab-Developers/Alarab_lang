@@ -304,16 +304,6 @@ static int parse_function(double *v) {
 ========================================================= */
 
 /* التحقق أن "و" منطقية وليست داخل كلمة */
-static int is_logic_and(const char *s, int i)
-{
-    char before = (i > 0) ? s[i - 1] : ' ';
-    char after  = s[i + 2];
-
-    if (isalpha(before) || (unsigned char)before >= 0x80) return 0;
-    if (isalpha(after)  || (unsigned char)after  >= 0x80) return 0;
-
-    return 1;
-}
 
 /* التحقق أن "او" منطقية */
 static int is_logic_or(const char *s, int i)
@@ -333,27 +323,75 @@ int math_eval(const char *expression_text,
     /* =========================
        دعم AND (و) بدون مسافات
     ========================= */
+
+{
+    const char *start = expression_text;
+    int has_comma = 0;
+
     for (int i = 0; expression_text[i] != '\0'; i++)
     {
-        if (strncmp(&expression_text[i], "و", 2) == 0 &&
-            is_logic_and(expression_text, i))
+        if (expression_text[i] == ',')
         {
-            char left[256];
-            char right[256];
-
-            strncpy(left, expression_text, i);
-            left[i] = '\0';
-
-            strcpy(right, &expression_text[i + 2]);
-
-            double l = 0, r = 0;
-
-            if (math_eval(left, &l) != 0) return -1;
-            if (math_eval(right, &r) != 0) return -1;
-
-            *result = (l != 0 && r != 0);
-            return 0;
+            has_comma = 1;
+            break;
         }
+    }
+
+    if (has_comma)
+    {
+
+        while (1)
+        {
+            const char *comma = strchr(start, ',');
+
+            char part[256];
+
+            if (comma)
+            {
+                int len = comma - start;
+                if (len >= 255) len = 255;
+
+                strncpy(part, start, len);
+                part[len] = '\0';
+            }
+            else
+            {
+                strncpy(part, start, 255);
+                part[255] = '\0';
+            }
+
+            /* حذف المسافات من البداية */
+            char *p = part;
+            while (*p == ' ') p++;
+
+            /* حذف المسافات من النهاية */
+            char *end = p + strlen(p) - 1;
+            while (end > p && *end == ' ')
+            {
+                *end = '\0';
+                end--;
+            }
+
+            double val = 0;
+
+            if (math_eval(p, &val) != 0)
+                return -1;
+
+            if (val == 0)
+            {
+                *result = 0;
+                return 0;
+            }
+
+            if (!comma)
+                break;
+
+            start = comma + 1;
+        }
+
+        *result = 1;
+        return 0;
+    }
     }
 
     /* =========================

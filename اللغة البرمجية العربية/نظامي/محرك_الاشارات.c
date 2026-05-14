@@ -9,9 +9,9 @@
 #include "محرك_المتغيرات.h"
 #include "المحرك_الرياضي.h"
 #include "محرك_كشف_الأخطاء.h"
+
 int وضع_التصحيح = 0;
 extern int CURRENT_LINE;
-
 
 // =====================================
 // دالة لطباعة النصوص
@@ -38,8 +38,7 @@ void rt_clear(void)
 int runtime_execute(Command cmd)
 {
     switch (cmd.type)
-    {  
-      // ===============================
+    {
         // ===============================
         // طباعة
         // ===============================
@@ -51,34 +50,25 @@ int runtime_execute(Command cmd)
                 strncpy(buffer, cmd.argument, sizeof(buffer) - 1);
                 buffer[sizeof(buffer) - 1] = '\0';
 
-                // تقسيم العناصر داخل ()
                 char *token = strtok(buffer, ",");
 
                 while (token)
                 {
-                    // حذف المسافات من البداية
-                    while (*token == ' ')
+                    while (isspace((unsigned char)*token))
                         token++;
 
-                    // حذف المسافات من النهاية
                     int len = strlen(token);
-                    while (len > 0 && token[len - 1] == ' ')
+                    while (len > 0 && isspace((unsigned char)token[len - 1]))
                     {
                         token[len - 1] = '\0';
                         len--;
                     }
 
-                    // ===============================
-                    // إذا كان نص
-                    // ===============================
                     if (len >= 2 && token[0] == '"' && token[len - 1] == '"')
                     {
                         token[len - 1] = '\0';
                         printf("%s ", token + 1);
                     }
-                    // ===============================
-                    // إذا كان متغير
-                    // ===============================
                     else
                     {
                         double value;
@@ -90,7 +80,7 @@ int runtime_execute(Command cmd)
                         }
                         else if (res == -1)
                         {
-                            printf("❌ المتغير %s ليس له قيمة ", token);
+                            printf("× المتغير %s ليس له قيمة ", token);
                         }
                         else
                         {
@@ -125,7 +115,7 @@ int runtime_execute(Command cmd)
             double value;
             int ret = math_eval(cmd.argument, &value);
 
-            if (ret == 0)   // حساب double
+            if (ret == 0)
             {
                 if (fabs(value - (long long)value) < 1e-9)
                     printf("الناتج = %lld\n", (long long)value);
@@ -134,8 +124,7 @@ int runtime_execute(Command cmd)
             }
             else if (ret == 2)
             {
-                // BigInt تم طباعته داخل المحرك
-                // لا نفعل شيء هنا
+                // BigInt
             }
             else
             {
@@ -145,72 +134,77 @@ int runtime_execute(Command cmd)
             break;
         }
 
+        // ===============================
+        // إدخال
+        // ===============================
         case CMD_INPUT:
         {
             double value;
 
             printf("ادخل قيمة %s: ", cmd.argument);
 
-        if (scanf("%lf", &value) != 1)
-        {
-            printf("❌ إدخال غير صالح\n");
+            if (scanf("%lf", &value) != 1)
+            {
+                printf("× إدخال غير صالح\n");
 
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF);
+                int c;
+                while ((c = getchar()) != '\n' && c != EOF);
 
-            break;
-        }
+                break;
+            }
 
-            getchar(); // تنظيف السطر
+            getchar();
 
             var_set(cmd.argument, value);
 
-            printf("تم حفظ %s = %.2f\n", cmd.argument, value);
-
             break;
         }
+
         // ===============================
-        // إسناد متغير
+        // 🔥 إسناد متغير (مصحح بالكامل)
         // ===============================
         case CMD_ASSIGN:
         {
             char name[32];
             double val;
 
-            char *eq = strchr(cmd.argument, '=');
+            // ⚠️ لا تعدل cmd.argument مباشرة
+            char temp[128];
+            strncpy(temp, cmd.argument, sizeof(temp) - 1);
+            temp[sizeof(temp) - 1] = '\0';
+
+            char *eq = strchr(temp, '=');
 
             if (eq)
             {
                 *eq = '\0';
 
-                sscanf(cmd.argument, "%31s", name);
+                // 🔹 تنظيف الاسم
+                char *start = temp;
+                while (isspace((unsigned char)*start)) start++;
 
+                char *end = start + strlen(start) - 1;
+                while (end > start && isspace((unsigned char)*end))
+                {
+                    *end = '\0';
+                    end--;
+                }
+
+                strcpy(name, start);
+
+                // 🔹 تنظيف القيمة
                 char *value_str = eq + 1;
+                while (isspace((unsigned char)*value_str)) value_str++;
 
-                while (*value_str == ' ')
-                    value_str++;
-
-                // ===============================
-                // متغير بدون قيمة
-                // ===============================
                 if (strcmp(value_str, "؟") == 0)
                 {
                     var_set(name, NAN);
-                    printf("تم تعريف %s كمتغير بدون قيمة\n", name);
                     break;
                 }
 
-                // ===============================
-                // إسناد عادي
-                // ===============================
                 if (math_eval(value_str, &val) == 0)
                 {
                     var_set(name, val);
-                    if (وضع_التصحيح)
-                            printf("تم حفظ %s = %lld\n", name, (long long)val);
-                    else
-                        if (وضع_التصحيح)
-                            printf("تم حفظ %s = %.10f\n", name, val);;
                 }
                 else
                 {
@@ -220,6 +214,7 @@ int runtime_execute(Command cmd)
 
             break;
         }
+
         // ===============================
         // حل معادلة
         // ===============================
@@ -233,23 +228,15 @@ int runtime_execute(Command cmd)
             if (r == 0)
             {
                 if (fabs(value - (long long)value) < 1e-9)
-                    printf("✅ النتيجة المكتشفة: %s = %lld\n", solved_var, (long long)value);
+                    printf("✅ %s = %lld\n", solved_var, (long long)value);
                 else
-                    printf("✅ النتيجة المكتشفة: %s = %.10f\n", solved_var, value);
+                    printf("✅ %s = %.10f\n", solved_var, value);
 
                 var_set(solved_var, value);
             }
-            else if (r == -3)
-            {
-                printf("❌ يجب أن تحتوي المعادلة على مجهول واحد فقط\n");
-            }
-            else if (r == -4)
-            {
-                printf("❌ لا يوجد حل ضمن المجال المحدد\n");
-            }
             else
             {
-                printf("❌ فشل في تحليل المعادلة\n");
+                printf("❌ فشل في حل المعادلة\n");
             }
 
             break;
@@ -268,13 +255,12 @@ int runtime_execute(Command cmd)
         case CMD_EXIT:
             return 1;
 
-        case CMD_BREAK: //كسر الحلقة
-            return 2; // إشارة كسر
+        case CMD_BREAK:
+            return 2;
 
         // ===============================
         // غير معروف
         // ===============================
-        case CMD_UNKNOWN:
         default:
             printf("❌ أمر غير معروف\n");
             break;

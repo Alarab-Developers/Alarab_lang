@@ -19,16 +19,14 @@ typedef struct {
     int line;
 } Error;
 
-// إضافة خطأ
 void error_add(ErrorType type, const char *message, int line);
-
-// طباعة كل الأخطاء
 void error_print_all();
-
-// هل يوجد أخطاء؟
 int error_has_any();
-
-// إعادة تعيين
 void error_clear();
+
+
+int check_braces_balance(const char *code, int line);
+int error_check_program(const char *code, int line);
+int check_function_syntax(const char *line, int line_number);
 
 #endif

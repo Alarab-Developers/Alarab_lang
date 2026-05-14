@@ -63,6 +63,9 @@ Command parse_line(const char *line)
 
     strncpy(clean, line, sizeof(clean) - 1);
     clean[sizeof(clean) - 1] = '\0';
+    
+    static int inside_block_comment = 0;
+    remove_comments(clean, &inside_block_comment);
 
     clean[strcspn(clean, "\n")] = '\0';
 
@@ -210,14 +213,58 @@ Command parse_line(const char *line)
     }
     
     /* ================================
-       تعيين متغير
+       تعيين متغير (الإصلاح هنا 🔥)
     ================================= */
 
-    if (strchr(clean, '='))
+    int keyword_len = strlen("متغير");
+
+    if (strncmp(clean, "متغير", keyword_len) == 0 &&
+        isspace((unsigned char)clean[keyword_len]))
     {
+        const char *p = clean + keyword_len;
+
+        while (isspace((unsigned char)*p))
+            p++;
+
+        const char *eq = strchr(p, '=');
+        if (!eq)
+            return cmd;
+
+        char name_part[64] = {0};
+        int name_len = eq - p;
+
+        if (name_len <= 0 || name_len >= (int)sizeof(name_part))
+            return cmd;
+
+        strncpy(name_part, p, name_len);
+        name_part[name_len] = '\0';
+
+        // تنظيف الاسم
+        char *start = name_part;
+        while (isspace((unsigned char)*start))
+            start++;
+
+        char *end = start + strlen(start) - 1;
+        while (end > start && isspace((unsigned char)*end))
+        {
+            *end = '\0';
+            end--;
+        }
+
+        if (strlen(start) == 0)
+            return cmd;
+
+        // تنظيف القيمة
+        const char *value_start = eq + 1;
+        while (isspace((unsigned char)*value_start))
+            value_start++;
+
+        char final[128];
+        snprintf(final, sizeof(final), "%s=%s", start, value_start);
+
         cmd.type = CMD_ASSIGN;
 
-        strncpy(cmd.argument, clean, sizeof(cmd.argument) - 1);
+        strncpy(cmd.argument, final, sizeof(cmd.argument) - 1);
         cmd.argument[sizeof(cmd.argument) - 1] = '\0';
 
         return cmd;

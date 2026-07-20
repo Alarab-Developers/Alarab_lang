@@ -17,7 +17,7 @@
 #include "الدالة.h"
 #include "الشرط.h"
 #include "الحلقات_التكرارية.h"
-#include "محرك_كشف_الأخطاء.h"
+#include "محرك_الفحص.h"
 #include "أدوات_الكشف.h"
 
 
